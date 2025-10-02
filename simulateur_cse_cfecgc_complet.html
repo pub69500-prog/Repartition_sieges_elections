@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur CSE – CFE-CGC (collèges, sièges & parité)</title>
+<style>
+  :root {
+    --bg:#ffffff; --card:#ffffff; --ink:#111827; --muted:#4b5563; --accent:#2563eb;
+    --warn:#b45309; --danger:#b91c1c; --border:#e5e7eb; --surface:#f9fafb;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;}
+  header{padding:20px;border-bottom:1px solid var(--border);
+    background:linear-gradient(90deg,#f3f4f6,#ffffff 40%,#f3f4f6)}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px}
+  h1{margin:0;font-size:20px;letter-spacing:.2px;display:flex;align-items:center;gap:12px}
+  h1 img{height:42px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .span6{grid-column:span 6}
+  .span12{grid-column:span 12}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  input[type=number]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+    background:#ffffff;color:var(--ink);font-size:14px}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .kpi{display:flex;align-items:center;justify-content:space-between;background:var(--surface);
+    border:1px solid var(--border);border-radius:10px;padding:12px}
+  .kpi b{font-size:18px}
+  .btn{cursor:pointer;display:inline-block;background:var(--accent);color:#ffffff;border:none;border-radius:10px;padding:12px 16px;font-weight:700}
+  .btn.secondary{background:#e5e7eb;color:#111827}
+  table{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:top}
+  th{background:var(--surface);color:#111827;text-align:left}
+  tr:last-child td{border-bottom:none}
+  .pill{padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #d1d5db;color:#374151;background:#f3f4f6}
+  .ok{color:#16a34a}
+  .warn{color:var(--warn)}
+  .danger{color:var(--danger)}
+  .foot{font-size:12px;color:var(--muted);line-height:1.5}
+  .hl{background:linear-gradient(90deg,rgba(37,99,235,.12),transparent);border-left:3px solid var(--accent);padding:10px 12px;border-radius:8px}
+  .muted{color:var(--muted)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+  .flex-col{display:flex;flex-direction:column;gap:4px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1><img src="https://upload.wikimedia.org/wikipedia/fr/thumb/1/1a/Logo_CFE-CGC_2016.svg/512px-Logo_CFE-CGC_2016.svg.png" alt="Logo CFE-CGC"> Simulateur CSE – Répartition des élus, collèges & parité</h1>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="card span6">
+        <h2 style="margin-top:0">1) Saisir les effectifs (H/F)</h2>
+        <p class="muted">Renseigne l’effectif électoral de chaque catégorie. <b>Cadres ≥ 25</b> ⇒ création d’un <b>3ᵉ collège</b> (cadres).</p>
+        <div class="row">
+          <div style="flex:1 1 240px">
+            <label>Cadres — Hommes</label><input type="number" id="cadresH" min="0" value="0">
+          </div>
+          <div style="flex:1 1 240px">
+            <label>Cadres — Femmes</label><input type="number" id="cadresF" min="0" value="0">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1 1 240px">
+            <label>Agents de maîtrise — Hommes</label><input type="number" id="amH" min="0" value="0">
+          </div>
+          <div style="flex:1 1 240px">
+            <label>Agents de maîtrise — Femmes</label><input type="number" id="amF" min="0" value="0">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1 1 240px">
+            <label>1er collège (ouvriers/employés) — Hommes</label><input type="number" id="c1H" min="0" value="0">
+          </div>
+          <div style="flex:1 1 240px">
+            <label>1er collège (ouvriers/employés) — Femmes</label><input type="number" id="c1F" min="0" value="0">
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="calc">Calculer</button>
+          <button class="btn secondary" id="reset">Réinitialiser</button>
+        </div>
+      </section>
+
+      <section class="card span6">
+        <h2 style="margin-top:0">2) Résumé effectifs</h2>
+        <div class="seg">
+          <div class="kpi"><span>Total salariés</span><b id="tot"></b></div>
+          <div class="kpi"><span>Cadres (H/F)</span><b id="kpiCadres"></b></div>
+          <div class="kpi"><span>AM (H/F)</span><b id="kpiAM"></b></div>
+          <div class="kpi"><span>1er collège (H/F)</span><b id="kpiC1"></b></div>
+          <div class="kpi"><span>3ᵉ collège requis ?</span><b id="kpiC3"></b></div>
+          <div class="kpi"><span>Sièges légaux (R2314‑1)</span><b id="kpiSeats"></b></div>
+        </div>
+        <p class="foot" style="margin-top:12px">
+          <span class="hl">⚖️ La répartition des sièges <b>entre collèges</b> se négocie dans le <b>PAP</b>. L’outil propose une clé proportionnelle (plus fort reste) <b>indicative</b>.</span>
+        </p>
+      </section>
+
+      <section class="card span12">
+        <h2 style="margin-top:0">3) Répartition indicative des sièges par collège</h2>
+        <table id="tbSeats">
+          <thead>
+            <tr>
+              <th>Collège</th>
+              <th>Effectif (H/F)</th>
+              <th>Part de l’effectif</th>
+              <th>Sièges titulaires</th>
+              <th>Parité titulaires (H/F)</th>
+              <th>Alternance titulaires</th>
+              <th>Sièges suppléants</th>
+              <th>Parité suppléants (H/F)</th>
+              <th>Alternance suppléants</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="foot" style="margin-top:10px">
+          <b>Parité</b> : l’art. <span class="mono">L2314‑30</span> impose (i) une représentation proportionnelle H/F dans chaque <b>liste par collège</b> et (ii) une <b>alternance</b> des sexes sur la liste (jusqu’à épuisement d’un des sexes).
+        </p>
+      </section>
+
+      <section class="card span12">
+        <h2 style="margin-top:0">Notes juridiques (synthèse)</h2>
+        <ul class="foot">
+          <li><b>Nombre d’élus CSE</b> : à défaut d’accord (PAP), tableau légal <span class="mono">R2314‑1</span> (Service‑Public & Légifrance). Suppléants en nombre égal.</li>
+          <li><b>Collèges</b> : principe 2 collèges ; <b>3ᵉ collège “cadres” si ≥ 25 cadres</b> (art. <span class="mono">L2314‑11</span>).</li>
+          <li><b>Parité H/F</b> : art. <span class="mono">L2314‑30</span> : proportion par <b>collège</b> + alternance sur chaque liste (titulaires et suppléants séparément).</li>
+        </ul>
+        <p class="foot">Réfs : 
+          <a href="https://www.service-public.fr/particuliers/vosdroits/F34474" target="_blank" rel="noopener">Service‑Public (tableau R2314‑1)</a> · 
+          <a href="https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000035651024" target="_blank" rel="noopener">L2314‑30</a> · 
+          <a href="https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000006072050/LEGISCTA000006195699/" target="_blank" rel="noopener">Sous‑section Parité</a>
+        </p>
+      </section>
+    </div>
+  </main>
+
+<script>
+// === Table R2314‑1 (titulaires) – valeurs conformes au tableau Service‑Public/Légifrance ===
+const R2314_1 = [
+  {min:11,  max:24,  seats:1},
+  {min:25,  max:49,  seats:2},
+  {min:50,  max:74,  seats:4},
+  {min:75,  max:99,  seats:5},
+  {min:100, max:124, seats:6},
+  {min:125, max:149, seats:7},
+  {min:150, max:174, seats:8},
+  {min:175, max:199, seats:9},
+  {min:200, max:249, seats:10},
+  {min:250, max:299, seats:11},
+  {min:300, max:399, seats:11},
+  {min:400, max:499, seats:12},
+  {min:500, max:599, seats:13},
+  {min:600, max:699, seats:14},
+  {min:700, max:799, seats:14},
+  {min:800, max:899, seats:15},
+  {min:900, max:999, seats:16},
+  {min:1000, max:1249, seats:17},
+  {min:1250, max:1499, seats:18},
+  {min:1500, max:1749, seats:20},
+  {min:1750, max:1999, seats:21},
+  {min:2000, max:2249, seats:22},
+  {min:2250, max:2499, seats:23},
+  {min:2500, max:2749, seats:24},
+  {min:2750, max:2999, seats:25},
+  {min:3000, max:3499, seats:26},
+  {min:3500, max:3999, seats:27},
+  {min:4000, max:4499, seats:28},
+  {min:4500, max:4999, seats:29},
+  {min:5000, max:5999, seats:30},
+  {min:6000, max:6999, seats:32},
+  {min:7000, max:7999, seats:33},
+  {min:8000, max:8999, seats:34},
+  {min:9000, max:9999, seats:34},
+  {min:10000, max:Infinity, seats:35}
+];
+
+function seatsFromHeadcount(n){
+  if (n<11) return 0;
+  for (const r of R2314_1){ if (n>=r.min && n<=r.max) return r.seats; }
+  return 0;
+}
+
+function fmt(n){return Number(n).toLocaleString('fr-FR');}
+
+function proportionalSeatSplit(totalSeats, buckets){
+  // buckets: [{name, size, male, female}]
+  const nonEmpty = buckets.filter(b=>b.size>0);
+  if (nonEmpty.length===0) return buckets.map(_=>0);
+  const totalSize = nonEmpty.reduce((s,x)=>s+x.size,0);
+  const raw = nonEmpty.map(b=>({name:b.name, q: totalSeats*(b.size/totalSize)}));
+  let alloc = raw.map(o=>Math.floor(o.q));
+  let given = alloc.reduce((s,x)=>s+x,0);
+  // Donner au moins 1 siège aux collèges non vides si possible
+  for (let i=0;i<alloc.length && given<totalSeats;i++){ if (alloc[i]===0){ alloc[i]=1; given++; } }
+  // Plus fort reste
+  const rem = raw.map((o,i)=>({i, r:o.q-alloc[i]})).sort((a,b)=>b.r-a.r);
+  let idx=0;
+  while (given<totalSeats){ alloc[ rem[idx%rem.length].i ]++; given++; idx++; }
+  while (given>totalSeats){ const j=alloc.findIndex(x=>x>1); if (j===-1) break; alloc[j]--; given--; }
+  // Remettre aux indices d'origine en incluant les vides
+  let out=[]; let k=0;
+  for (const b of buckets){ out.push(b.size===0?0:alloc[k++]); }
+  return out;
+}
+
+function parityCounts(seats, male, female){
+  // L2314‑30 : proportion par collège, arrondie par plus fort reste
+  if (seats===0) return {m:0,f:0};
+  const total = male+female;
+  if (total===0) return {m:0,f:0};
+  const qm = seats*(male/total), qf = seats*(female/total);
+  let m = Math.floor(qm), f = Math.floor(qf);
+  let rem = seats - (m+f);
+  const rems = [
+    {sex:'m', r: qm-m},
+    {sex:'f', r: qf-f}
+  ].sort((a,b)=>b.r-a.r);
+  let t=0; while (rem>0){ if (rems[t%rems.length].sex==='m') m++; else f++; rem--; t++; }
+  if (m+f!==seats) f = seats-m;
+  return {m,f};
+}
+
+function buildAlternance(m,f){
+  // Alternance en démarrant par le sexe majoritaire du collège
+  let seq=[], H=m, F=f;
+  let turn = (m>=f)? 'H' : 'F';
+  while (H+F>0){
+    if (turn==='H' && H>0){ seq.push('H'); H--; turn='F'; }
+    else if (turn==='F' && F>0){ seq.push('F'); F--; turn='H'; }
+    else if (H>0){ seq.push('H'); H--; }
+    else if (F>0){ seq.push('F'); F--; }
+  }
+  return seq.join(' → ');
+}
+
+function compute(){
+  const n = (id)=>parseInt(document.getElementById(id).value||'0',10);
+  const cH=n('cadresH'), cF=n('cadresF');
+  const aH=n('amH'), aF=n('amF');
+  const pH=n('c1H'), pF=n('c1F');
+
+  const cadres=cH+cF, am=aH+aF, c1=pH+pF;
+  const total=cadres+am+c1;
+
+  document.getElementById('tot').textContent = fmt(total);
+  document.getElementById('kpiCadres').textContent = `${fmt(cadres)} (${fmt(cH)}H/${fmt(cF)}F)`;
+  document.getElementById('kpiAM').textContent = `${fmt(am)} (${fmt(aH)}H/${fmt(aF)}F)`;
+  document.getElementById('kpiC1').textContent = `${fmt(c1)} (${fmt(pH)}H/${fmt(pF)}F)`;
+
+  const hasThird = cadres>=25; // L2314-11
+  document.getElementById('kpiC3').innerHTML = hasThird ? '<span class="ok">Oui (≥ 25)</span>' : '<span class="warn">Non</span>';
+
+  const titulaires = seatsFromHeadcount(total);
+  const suppleants = titulaires; // même nombre
+  document.getElementById('kpiSeats').textContent = titulaires>0 ? `${titulaires} titulaires + ${suppleants} suppléants` : '—';
+
+  // Construire les collèges selon la règle
+  const colleges = [];
+  // 1er collège
+  colleges.push({name:'1er collège (Ouvriers/Employés)', size:c1, male:pH, female:pF});
+  if (hasThird){
+    colleges.push({name:'2e collège (Techniciens / AM)', size:am, male:aH, female:aF});
+    colleges.push({name:'3e collège (Cadres)', size:cadres, male:cH, female:cF});
+  }else{
+    colleges.push({name:'2e collège (Techniciens / AM / Cadres)', size:am+cadres, male:aH+cH, female:aF+cF});
+  }
+
+  const seatsPer = proportionalSeatSplit(titulaires, colleges);
+
+  const tb = document.querySelector('#tbSeats tbody');
+  tb.innerHTML = '';
+  colleges.forEach((col, idx)=>{
+    const seatsTit = seatsPer[idx]||0;
+    const seatsSup = seatsTit; // même nombre
+    const parTit = parityCounts(seatsTit, col.male, col.female);
+    const parSup = parityCounts(seatsSup, col.male, col.female); // identique mais affiché séparément
+    const altTit = seatsTit>0 ? buildAlternance(parTit.m, parTit.f) : '—';
+    const altSup = seatsSup>0 ? buildAlternance(parSup.m, parSup.f) : '—';
+    const part = total>0 ? (col.size/total*100) : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${col.name}</td>
+      <td>${fmt(col.size)} <span class="muted">(${fmt(col.male)}H / ${fmt(col.female)}F)</span></td>
+      <td>${part.toFixed(1)}%</td>
+      <td><b>${seatsTit}</b>${seatsTit>0?` <span class="pill">indicatif</span>`:''}</td>
+      <td>${seatsTit>0?`${parTit.m}H / ${parTit.f}F`:'—'}</td>
+      <td>${altTit}</td>
+      <td>${seatsSup}</td>
+      <td>${seatsSup>0?`${parSup.m}H / ${parSup.f}F`:'—'}</td>
+      <td>${altSup}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+document.getElementById('calc').addEventListener('click', compute);
+document.getElementById('reset').addEventListener('click', ()=>{
+  ['cadresH','cadresF','amH','amF','c1H','c1F'].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById('tot').textContent='';
+  document.getElementById('kpiCadres').textContent='';
+  document.getElementById('kpiAM').textContent='';
+  document.getElementById('kpiC1').textContent='';
+  document.getElementById('kpiC3').textContent='';
+  document.getElementById('kpiSeats').textContent='';
+  document.querySelector('#tbSeats tbody').innerHTML='';
+});
+</script>
+</body>
+</html>
